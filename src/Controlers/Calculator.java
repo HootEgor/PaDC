@@ -1,5 +1,7 @@
 package Controlers;
 
+import java.util.concurrent.locks.ReentrantLock;
+
 public class Calculator {
     public static double[] addVectors(double[] vector1, double[] vector2) {
         double[] resultVector = new double[vector1.length];
@@ -13,6 +15,8 @@ public class Calculator {
         int rows = matrix.length;
         int cols = matrix[0].length;
         double[] resultVector = new double[rows];
+        ReentrantLock lock = new ReentrantLock();
+
         Thread half1 = new Thread(() -> {
             for (int i = 0; i <= rows/2; i++) {
                 double sum = 0;
@@ -23,8 +27,11 @@ public class Calculator {
                     c = (t - sum) - y;
                     sum = t;
                 }
-                synchronized (resultVector) {
+                lock.lock();
+                try {
                     resultVector[i] = sum;
+                } finally {
+                    lock.unlock();
                 }
             }
         });
@@ -39,8 +46,11 @@ public class Calculator {
                     c = (t - sum) - y;
                     sum = t;
                 }
-                synchronized (resultVector) {
+                lock.lock();
+                try {
                     resultVector[i] = sum;
+                } finally {
+                    lock.unlock();
                 }
             }
         });
@@ -68,6 +78,8 @@ public class Calculator {
         }
         double[][] resultMatrix = new double[rows1][cols2];
 
+        ReentrantLock lock = new ReentrantLock();
+
         Thread half1 = new Thread(() -> {
             for (int i = 0; i < rows1; i++) {
                 for (int j = 0; j < cols2/2; j++) {
@@ -79,8 +91,11 @@ public class Calculator {
                         c = (t - sum) - y;
                         sum = t;
                     }
-                    synchronized (resultMatrix) {
+                    lock.lock();
+                    try {
                         resultMatrix[i][j] = sum;
+                    } finally {
+                        lock.unlock();
                     }
                 }
             }
@@ -97,8 +112,11 @@ public class Calculator {
                         c = (t - sum) - y;
                         sum = t;
                     }
-                    synchronized (resultMatrix) {
+                    lock.lock();
+                    try {
                         resultMatrix[i][j] = sum;
+                    } finally {
+                        lock.unlock();
                     }
                 }
             }

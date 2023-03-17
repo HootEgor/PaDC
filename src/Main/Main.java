@@ -2,7 +2,6 @@ package Main;
 
 import java.io.*;
 import java.util.Arrays;
-import java.util.Random;
 
 import static Controlers.Calculator.*;
 import static Controlers.FileManager.*;
