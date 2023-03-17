@@ -3,7 +3,6 @@ package Main;
 import java.io.*;
 import java.util.Arrays;
 import java.util.Random;
-import java.util.concurrent.*;
 
 import static Controlers.Calculator.*;
 import static Controlers.FileManager.*;
@@ -45,9 +44,9 @@ public class Main {
 
         startTime = System.nanoTime();
         double[][] MCminusMX = subtractMatrixMatrix(MC, MX);
-        double[][] bMDxMCminusMX = multiplyScalarMatrixVector(b, multiplyMatrixMatrix(MD, MCminusMX));
+        double[][] bMDxMCminusMX = multiplyScalarMatrix(b, multiplyMatrixMatrix(MD, MCminusMX));
         double[][] MXxMC = multiplyMatrixMatrix(MX, MC);
-        double[][] MXxMCxb = multiplyScalarMatrixVector(b, MXxMC);
+        double[][] MXxMCxb = multiplyScalarMatrix(b, MXxMC);
         MA = addMatrices(bMDxMCminusMX, MXxMCxb);
         endTime = System.nanoTime();
 
@@ -64,37 +63,24 @@ public class Main {
         writeVectorToFile("Result_E.txt", E);
 
     }
-
-    private static double[] generateVector(int size) {
-        double[] vector = new double[size];
-        Random random = new Random();
-        for (int i = 0; i < size; i++) {
-            vector[i] = random.nextDouble();
-        }
-        return vector;
-    }
-
-    private static double[][] generateMatrix(int size) {
-        double[][] matrix = new double[size][size];
-        Random random = new Random();
-        for (int i = 0; i < size; i++) {
-            for (int j = 0; j < size; j++) {
-                matrix[i][j] = random.nextDouble();
-            }
-        }
-        return matrix;
-    }
-
-    private static double findMinValue(double[][] matrix) {
-        double minValue = matrix[0][0];
-        for (int i = 0; i < matrix.length; i++) {
-            for (int j = 0; j < matrix[i].length; j++) {
-                if (matrix[i][j] < minValue) {
-                    minValue = matrix[i][j];
-                }
-            }
-        }
-        return minValue;
-    }
-
 }
+
+//    private static double[] generateVector(int size) {
+//        double[] vector = new double[size];
+//        Random random = new Random();
+//        for (int i = 0; i < size; i++) {
+//            vector[i] = random.nextDouble();
+//        }
+//        return vector;
+//    }
+//
+//    private static double[][] generateMatrix(int size) {
+//        double[][] matrix = new double[size][size];
+//        Random random = new Random();
+//        for (int i = 0; i < size; i++) {
+//            for (int j = 0; j < size; j++) {
+//                matrix[i][j] = random.nextDouble();
+//            }
+//        }
+//        return matrix;
+//    }

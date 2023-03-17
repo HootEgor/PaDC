@@ -1,9 +1,5 @@
 package Controlers;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-
 public class Calculator {
     public static double[] addVectors(double[] vector1, double[] vector2) {
         double[] resultVector = new double[vector1.length];
@@ -17,13 +13,48 @@ public class Calculator {
         int rows = matrix.length;
         int cols = matrix[0].length;
         double[] resultVector = new double[rows];
-        for (int i = 0; i < rows; i++) {
-            double sum = 0;
-            for (int j = 0; j < cols; j++) {
-                sum += matrix[i][j] * vector[j];
+        Thread half1 = new Thread(() -> {
+            for (int i = 0; i <= rows/2; i++) {
+                double sum = 0;
+                double c = 0;
+                for (int j = 0; j < cols; j++) {
+                    double y = matrix[i][j] * vector[j] - c;
+                    double t = sum + y;
+                    c = (t - sum) - y;
+                    sum = t;
+                }
+                synchronized (resultVector) {
+                    resultVector[i] = sum;
+                }
             }
-            resultVector[i] = sum;
+        });
+
+        Thread half2 = new Thread(() -> {
+            for (int i = rows/2; i < rows; i++) {
+                double sum = 0;
+                double c = 0;
+                for (int j = 0; j < cols; j++) {
+                    double y = matrix[i][j] * vector[j] - c;
+                    double t = sum + y;
+                    c = (t - sum) - y;
+                    sum = t;
+                }
+                synchronized (resultVector) {
+                    resultVector[i] = sum;
+                }
+            }
+        });
+
+        half1.start();
+        half2.start();
+
+        try {
+            half1.join();
+            half2.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
+
         return resultVector;
     }
 
@@ -37,48 +68,56 @@ public class Calculator {
         }
         double[][] resultMatrix = new double[rows1][cols2];
 
-        ExecutorService executor = Executors.newFixedThreadPool(2);
-
-        Runnable task1 = () -> {
+        Thread half1 = new Thread(() -> {
             for (int i = 0; i < rows1; i++) {
                 for (int j = 0; j < cols2/2; j++) {
+                    double sum = 0;
+                    double c = 0;
                     for (int k = 0; k < cols1; k++) {
-                        synchronized (resultMatrix) {
-                            resultMatrix[i][j] += matrix1[i][k] * matrix2[k][j];
-                        }
+                        double y = matrix1[i][k] * matrix2[k][j] - c;
+                        double t = sum + y;
+                        c = (t - sum) - y;
+                        sum = t;
                     }
-
+                    synchronized (resultMatrix) {
+                        resultMatrix[i][j] = sum;
+                    }
                 }
             }
-        };
+        });
 
-        Runnable task2 = () -> {
+        Thread half2 = new Thread(() ->{
             for (int i = 0; i < rows1; i++) {
                 for (int j = cols2/2; j < cols2; j++) {
+                    double sum = 0;
+                    double c = 0;
                     for (int k = 0; k < cols1; k++) {
-                        synchronized (resultMatrix) {
-                            resultMatrix[i][j] += matrix1[i][k] * matrix2[k][j];
-                        }
+                        double y = matrix1[i][k] * matrix2[k][j] - c;
+                        double t = sum + y;
+                        c = (t - sum) - y;
+                        sum = t;
                     }
-
+                    synchronized (resultMatrix) {
+                        resultMatrix[i][j] = sum;
+                    }
                 }
             }
-        };
+        });
 
-        executor.submit(task1);
-        executor.submit(task2);
+        half1.start();
+        half2.start();
 
-        executor.shutdown();
         try {
-            executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+            half1.join();
+            half2.join();
         } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+            e.printStackTrace();
         }
 
         return resultMatrix;
     }
 
-    public static double[][] multiplyScalarMatrixVector(double scalar, double[][] matrix) {
+    public static double[][] multiplyScalarMatrix(double scalar, double[][] matrix) {
         int rows = matrix.length;
         int cols = matrix[0].length;
         double[][] resultMatrix = new double[rows][cols];
@@ -121,6 +160,18 @@ public class Calculator {
             resultVector[i] = vector[i] * scalar;
         }
         return resultVector;
+    }
+
+    public static double findMinValue(double[][] matrix) {
+        double minValue = matrix[0][0];
+        for (int i = 0; i < matrix.length; i++) {
+            for (int j = 0; j < matrix[i].length; j++) {
+                if (matrix[i][j] < minValue) {
+                    minValue = matrix[i][j];
+                }
+            }
+        }
+        return minValue;
     }
 
     public static void printMatrix(double[][] matrix) {
