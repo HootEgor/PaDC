@@ -22,7 +22,7 @@ public class Main {
         double[][] MA;
 
         try {
-            MC = readMatrixFromFile("MC.txt");
+            MC = readMatrixFromFile2("MC.txt");
             MD = readMatrixFromFile("MD.txt");
             MX = readMatrixFromFile("MX.txt");
             D = readVectorFromFile("D.txt");
@@ -40,6 +40,12 @@ public class Main {
         E = addVectors(BxMC, DminMC);
         long endTime = System.nanoTime();
         long ECalcTime = endTime - startTime;
+
+        try {
+            MC = readMatrixFromFile("MC.txt");
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
 
         startTime = System.nanoTime();
         double[][] MCminusMX = subtractMatrixMatrix(MC, MX);
@@ -60,7 +66,6 @@ public class Main {
 
         writeMatrixToFile("Result_MA.txt", MA);
         writeVectorToFile("Result_E.txt", E);
-
     }
 }
 

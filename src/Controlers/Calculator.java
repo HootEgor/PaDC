@@ -1,8 +1,13 @@
 package Controlers;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class Calculator {
+
+    private static int pullSize = 2;
     public static double[] addVectors(double[] vector1, double[] vector2) {
         double[] resultVector = new double[vector1.length];
         for (int i = 0; i < vector1.length; i++) {
@@ -16,51 +21,32 @@ public class Calculator {
         int cols = matrix[0].length;
         double[] resultVector = new double[rows];
         ReentrantLock lock = new ReentrantLock();
+        ExecutorService executorService = Executors.newFixedThreadPool(pullSize);
 
-        Thread half1 = new Thread(() -> {
-            for (int i = 0; i <= rows/2; i++) {
+        for (int i = 0; i < rows; i++) {
+            int finalI = i;
+            executorService.submit(() -> {
                 double sum = 0;
                 double c = 0;
                 for (int j = 0; j < cols; j++) {
-                    double y = matrix[i][j] * vector[j] - c;
+                    double y = matrix[finalI][j] * vector[j] - c;
                     double t = sum + y;
                     c = (t - sum) - y;
                     sum = t;
                 }
+
                 lock.lock();
                 try {
-                    resultVector[i] = sum;
+                    resultVector[finalI] = sum;
                 } finally {
                     lock.unlock();
                 }
-            }
-        });
+            });
+        }
 
-        Thread half2 = new Thread(() -> {
-            for (int i = rows/2; i < rows; i++) {
-                double sum = 0;
-                double c = 0;
-                for (int j = 0; j < cols; j++) {
-                    double y = matrix[i][j] * vector[j] - c;
-                    double t = sum + y;
-                    c = (t - sum) - y;
-                    sum = t;
-                }
-                lock.lock();
-                try {
-                    resultVector[i] = sum;
-                } finally {
-                    lock.unlock();
-                }
-            }
-        });
-
-        half1.start();
-        half2.start();
-
+        executorService.shutdown();
         try {
-            half1.join();
-            half2.join();
+            executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -71,63 +57,33 @@ public class Calculator {
     public static double[][] multiplyMatrixMatrix(double[][] matrix1, double[][] matrix2) {
         int rows1 = matrix1.length;
         int cols1 = matrix1[0].length;
-        int rows2 = matrix2.length;
         int cols2 = matrix2[0].length;
-        if (cols1 != rows2) {
-            throw new IllegalArgumentException("Invalid matrix dimensions");
-        }
         double[][] resultMatrix = new double[rows1][cols2];
-
         ReentrantLock lock = new ReentrantLock();
+        ExecutorService executorService = Executors.newFixedThreadPool(pullSize);
 
-        Thread half1 = new Thread(() -> {
-            for (int i = 0; i < rows1; i++) {
-                for (int j = 0; j < cols2/2; j++) {
+        for (int i = 0; i < rows1; i++) {
+            int finalI = i;
+            executorService.submit(() -> {
+                for (int j = 0; j < cols2; j++) {
                     double sum = 0;
-                    double c = 0;
                     for (int k = 0; k < cols1; k++) {
-                        double y = matrix1[i][k] * matrix2[k][j] - c;
-                        double t = sum + y;
-                        c = (t - sum) - y;
-                        sum = t;
+                        sum += matrix1[finalI][k] * matrix2[k][j];
                     }
                     lock.lock();
                     try {
-                        resultMatrix[i][j] = sum;
+                        resultMatrix[finalI][j] = sum;
                     } finally {
                         lock.unlock();
                     }
+
                 }
-            }
-        });
+            });
+        }
 
-        Thread half2 = new Thread(() ->{
-            for (int i = 0; i < rows1; i++) {
-                for (int j = cols2/2; j < cols2; j++) {
-                    double sum = 0;
-                    double c = 0;
-                    for (int k = 0; k < cols1; k++) {
-                        double y = matrix1[i][k] * matrix2[k][j] - c;
-                        double t = sum + y;
-                        c = (t - sum) - y;
-                        sum = t;
-                    }
-                    lock.lock();
-                    try {
-                        resultMatrix[i][j] = sum;
-                    } finally {
-                        lock.unlock();
-                    }
-                }
-            }
-        });
-
-        half1.start();
-        half2.start();
-
+        executorService.shutdown();
         try {
-            half1.join();
-            half2.join();
+            executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }

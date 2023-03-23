@@ -60,10 +60,28 @@ public class FileManager {
             String line = scanner.nextLine();
             String[] numbersAsString = line.split(" ");
             for (int j = 0; j < n; j++) {
+                matrix[i][j] = Double.parseDouble(numbersAsString[j]);
+            }
+        }
+        scanner.close();
+        return matrix;
+
+    }
+
+    public static double[][] readMatrixFromFile2(String filename) throws FileNotFoundException {
+        Scanner scanner = new Scanner(new File(filename));
+        int n = size;
+        double[][] matrix = new double[n][n];
+
+        for (int i = 0; i < n; i++) {
+            String line = scanner.nextLine();
+            String[] numbersAsString = line.split(" ");
+            for (int j = 0; j < n; j++) {
                 matrix[i][j] = Double.parseDouble(numbersAsString[i]);
             }
         }
         scanner.close();
         return matrix;
+
     }
 }
