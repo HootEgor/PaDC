@@ -1,13 +1,14 @@
 package Controlers;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.*;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class Calculator {
 
-    private static int pullSize = 2;
+    private static final int pullSize = 2;
     public static double[] addVectors(double[] vector1, double[] vector2) {
         double[] resultVector = new double[vector1.length];
         for (int i = 0; i < vector1.length; i++) {
@@ -20,12 +21,14 @@ public class Calculator {
         int rows = matrix.length;
         int cols = matrix[0].length;
         double[] resultVector = new double[rows];
-        ReentrantLock lock = new ReentrantLock();
+        Lock lock = new ReentrantLock();
         ExecutorService executorService = Executors.newFixedThreadPool(pullSize);
+
+        List<Callable<Void>> tasks = new ArrayList<>();
 
         for (int i = 0; i < rows; i++) {
             int finalI = i;
-            executorService.submit(() -> {
+            Callable<Void> task = () -> {
                 double sum = 0;
                 double c = 0;
                 for (int j = 0; j < cols; j++) {
@@ -41,30 +44,37 @@ public class Calculator {
                 } finally {
                     lock.unlock();
                 }
-            });
+
+                return null;
+            };
+            tasks.add(task);
         }
 
-        executorService.shutdown();
         try {
-            executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+            executorService.invokeAll(tasks);
         } catch (InterruptedException e) {
             e.printStackTrace();
+        } finally {
+            executorService.shutdown();
         }
 
         return resultVector;
     }
+
 
     public static double[][] multiplyMatrixMatrix(double[][] matrix1, double[][] matrix2) {
         int rows1 = matrix1.length;
         int cols1 = matrix1[0].length;
         int cols2 = matrix2[0].length;
         double[][] resultMatrix = new double[rows1][cols2];
-        ReentrantLock lock = new ReentrantLock();
+        Lock lock = new ReentrantLock();
         ExecutorService executorService = Executors.newFixedThreadPool(pullSize);
+
+        List<Callable<Void>> tasks = new ArrayList<>();
 
         for (int i = 0; i < rows1; i++) {
             int finalI = i;
-            executorService.submit(() -> {
+            Callable<Void> task = () -> {
                 for (int j = 0; j < cols2; j++) {
                     double sum = 0;
                     for (int k = 0; k < cols1; k++) {
@@ -78,14 +88,17 @@ public class Calculator {
                     }
 
                 }
-            });
+                return null;
+            };
+            tasks.add(task);
         }
 
-        executorService.shutdown();
         try {
-            executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+            executorService.invokeAll(tasks);
         } catch (InterruptedException e) {
             e.printStackTrace();
+        } finally {
+            executorService.shutdown();
         }
 
         return resultMatrix;
