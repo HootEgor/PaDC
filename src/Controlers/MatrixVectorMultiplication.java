@@ -1,29 +1,47 @@
 package Controlers;
 
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.ForkJoinTask;
-import java.util.concurrent.RecursiveAction;
+import java.util.concurrent.*;
 
-public class MatrixVectorMultiplication extends RecursiveAction {
-    private static final int THRESHOLD = 100;
+public class MatrixVectorMultiplication {
     private final double[][] matrix;
     private final double[] vector;
     private final double[] resultVector;
-    private final int start;
-    private final int end;
+    private final int numThreads;
+    private final BlockingQueue<Integer> queue;
 
-    public MatrixVectorMultiplication(double[][] matrix, double[] vector, double[] resultVector, int start, int end) {
+    public MatrixVectorMultiplication(double[][] matrix, double[] vector, double[] resultVector, int numThreads) {
         this.matrix = matrix;
         this.vector = vector;
         this.resultVector = resultVector;
-        this.start = start;
-        this.end = end;
+        this.numThreads = numThreads;
+        this.queue = new LinkedBlockingQueue<>(matrix.length);
+        for (int i = 0; i < matrix.length; i++) {
+            queue.add(i);
+        }
     }
 
-    @Override
-    protected void compute() {
-        if (end - start <= THRESHOLD) {
-            for (int i = start; i < end; i++) {
+    public double[] multiply() {
+        ExecutorService executor = Executors.newFixedThreadPool(numThreads);
+        for (int i = 0; i < numThreads; i++) {
+            executor.submit(new MatrixVectorMultiplicationTask());
+        }
+        executor.shutdown();
+        try {
+            executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        return resultVector;
+    }
+
+    private class MatrixVectorMultiplicationTask implements Callable<Void> {
+        @Override
+        public Void call(){
+            while (true) {
+                Integer i = queue.poll();
+                if (i == null) {
+                    break;
+                }
                 double sum = 0;
                 double c = 0;
                 for (int j = 0; j < matrix[0].length; j++) {
@@ -34,20 +52,13 @@ public class MatrixVectorMultiplication extends RecursiveAction {
                 }
                 resultVector[i] = sum;
             }
-        } else {
-            int mid = start + (end - start) / 2;
-            MatrixVectorMultiplication left = new MatrixVectorMultiplication(matrix, vector, resultVector, start, mid);
-            MatrixVectorMultiplication right = new MatrixVectorMultiplication(matrix, vector, resultVector, mid, end);
-            invokeAll(left, right);
+            return null;
         }
     }
 
-    public static double[] multiplyMatrixVector(double[][] matrix, double[] vector) {
+    public static double[] multiplyMatrixVector(double[][] matrix, double[] vector, int numThreads) {
         double[] resultVector = new double[matrix.length];
-        MatrixVectorMultiplication task = new MatrixVectorMultiplication(matrix, vector, resultVector, 0, matrix.length);
-        ForkJoinPool pool = new ForkJoinPool();
-        pool.invoke(task);
-        pool.shutdown();
-        return resultVector;
+        MatrixVectorMultiplication task = new MatrixVectorMultiplication(matrix, vector, resultVector, numThreads);
+        return task.multiply();
     }
 }

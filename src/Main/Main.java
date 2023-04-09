@@ -59,7 +59,7 @@ public class Main {
 
         System.out.println("E = " + Arrays.toString(E));
         System.out.println("MA = ");
-        printMatrix(MA);
+        //printMatrix(MA);
 
         System.out.println("Calculation time:\tE = " + ECalcTime);
         System.out.println("\t\t\t\t\tMA = " + MACalcTime);

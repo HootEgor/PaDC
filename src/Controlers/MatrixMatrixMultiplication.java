@@ -1,55 +1,74 @@
 package Controlers;
 
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.ForkJoinTask;
-import java.util.concurrent.RecursiveAction;
+import java.util.concurrent.*;
 
-public class MatrixMatrixMultiplication extends RecursiveAction {
-    private static final int THRESHOLD = 64;
+
+public class MatrixMatrixMultiplication{
+    private final int step = 10;
     private final double[][] matrix1;
     private final double[][] matrix2;
     private final double[][] resultMatrix;
-    private final int startRow;
-    private final int endRow;
+    private final int numThreads;
+    private final BlockingQueue<Integer> queue;
 
-    public MatrixMatrixMultiplication(double[][] matrix1, double[][] matrix2, double[][] resultMatrix, int startRow, int endRow) {
+    public MatrixMatrixMultiplication(double[][] matrix1, double[][] matrix2, double[][] resultMatrix, int numThreads) {
         this.matrix1 = matrix1;
         this.matrix2 = matrix2;
         this.resultMatrix = resultMatrix;
-        this.startRow = startRow;
-        this.endRow = endRow;
-    }
-
-    @Override
-    protected void compute() {
-        if (endRow - startRow <= THRESHOLD) {
-            for (int i = startRow; i < endRow; i++) {
-                for (int j = 0; j < matrix2[0].length; j++) {
-                    double sum = 0;
-                    double c = 0;
-                    for (int k = 0; k < matrix1[0].length; k++) {
-                        double y = matrix1[i][k] * matrix2[k][j] - c;
-                        double t = sum + y;
-                        c = (t - sum) - y;
-                        sum = t;
-                    }
-                    resultMatrix[i][j] = sum;
-                }
-            }
-        } else {
-            int mid = startRow + (endRow - startRow) / 2;
-            MatrixMatrixMultiplication left = new MatrixMatrixMultiplication(matrix1, matrix2, resultMatrix, startRow, mid);
-            MatrixMatrixMultiplication right = new MatrixMatrixMultiplication(matrix1, matrix2, resultMatrix, mid, endRow);
-            invokeAll(left, right);
+        this.numThreads = numThreads;
+        this.queue = new LinkedBlockingQueue<>(matrix1.length);
+        for (int i = 0; i < matrix1.length; i+=step) {
+            if(i + step <= matrix1.length)
+                queue.add(i + step);
+            else
+                queue.add((i + step)%matrix1.length);
         }
     }
 
-    public static double[][] multiplyMatrixMatrix(double[][] matrix1, double[][] matrix2) {
-        double[][] resultMatrix = new double[matrix1[0].length][matrix1[0].length];
-        MatrixMatrixMultiplication task = new MatrixMatrixMultiplication(matrix1, matrix2, resultMatrix, 0, matrix1[0].length);
-        ForkJoinPool pool = new ForkJoinPool();
-        pool.invoke(task);
-        pool.shutdown();
+    public double[][] multiply() {
+        ExecutorService executor = Executors.newFixedThreadPool(numThreads);
+        for (int i = 0; i < numThreads; i++) {
+            executor.submit(new MatrixMatrixMultiplication.MatrixMatrixMultiplicationTask());
+        }
+        executor.shutdown();
+        try {
+            executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         return resultMatrix;
+    }
+
+    private class MatrixMatrixMultiplicationTask implements Callable<Void> {
+        @Override
+        public Void call(){
+            while (true) {
+                Integer end = queue.poll();
+                if (end == null) {
+                    break;
+                }
+                for(int i = end - step; i < end; i++)
+                {
+                    for (int j = 0; j < matrix2[0].length; j++) {
+                        double sum = 0;
+                        double c = 0;
+                        for (int k = 0; k < matrix1[0].length; k++) {
+                            double y = matrix1[i][k] * matrix2[k][j] - c;
+                            double t = sum + y;
+                            c = (t - sum) - y;
+                            sum = t;
+                        }
+                        resultMatrix[i][j] = sum;
+                    }
+                }
+            }
+            return null;
+        }
+    }
+
+    public static double[][] multiplyMatrixMatrix(double[][] matrix1, double[][] matrix2, int numThreads) {
+        double[][] resultMatrix = new double[matrix1.length][matrix2[0].length];
+        MatrixMatrixMultiplication task = new MatrixMatrixMultiplication(matrix1, matrix2, resultMatrix, numThreads);
+        return task.multiply();
     }
 }

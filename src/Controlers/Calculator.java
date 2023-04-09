@@ -13,14 +13,14 @@ public class Calculator {
 
     public static double[] multiplyMatrixVector(double[][] matrix, double[] vector) {
         double[] resultVector;
-        resultVector = MatrixVectorMultiplication.multiplyMatrixVector(matrix,vector);
+        resultVector = MatrixVectorMultiplication.multiplyMatrixVector(matrix,vector,pullSize);
 
         return resultVector;
     }
 
     public static double[][] multiplyMatrixMatrix(double[][] matrix1, double[][] matrix2) {
         double[][] resultMatrix;
-        resultMatrix = MatrixMatrixMultiplication.multiplyMatrixMatrix(matrix1, matrix2);
+        resultMatrix = MatrixMatrixMultiplication.multiplyMatrixMatrix(matrix1, matrix2, pullSize*pullSize);
 
         return resultMatrix;
     }
